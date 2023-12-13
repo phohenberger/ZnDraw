@@ -124,14 +124,7 @@ class ZnDrawBase:  # collections.abc.MutableSequence
         """Insert atoms before index"""
         if isinstance(value, ase.Atoms):
             value = Frame.from_atoms(value)
-
-        data = list(self)
-        data.insert(index, value)
-        for idx, val in enumerate(data):
-            self[idx] = val
-
-        # TODO: why is this not working at the moment?
-        # self.socket.emit("atoms:insert", {index: value.to_dict()})
+        self.socket.emit("atoms:insert", {index: value.to_dict()})
 
     def append(self, value: t.Union[ase.Atoms, Frame]) -> None:
         """Append atoms to the end of the list"""
@@ -149,7 +142,7 @@ class ZnDrawBase:  # collections.abc.MutableSequence
                 value = Frame.from_atoms(value)
             self[size + idx] = value
 
-    def __getitem__(self, index) -> t.Union[ase.Atoms, list[ase.Atoms]]:
+    def __getitem__(self, index) -> Frame:
         length = len(self)
         is_scalar = isinstance(index, int)
         is_sclice = isinstance(index, slice)
@@ -168,7 +161,7 @@ class ZnDrawBase:  # collections.abc.MutableSequence
         atoms_list = []
 
         for val in downloaded_data.values():
-            atoms_list.append(Frame.from_dict(val).to_atoms())
+            atoms_list.append(Frame.from_dict(val))
 
         data = atoms_list[0] if is_scalar else atoms_list
         if data == [] and not is_sclice:
@@ -305,17 +298,17 @@ class ZnDrawDefault(ZnDrawBase):
     def initialize_webclient(self, sid):
         start_time = datetime.datetime.now()
         with self._set_sid(sid):
-            for idx, atoms in enumerate(self.read_data()):
+            for idx, frames in enumerate(self.read_data()):
                 if idx == 0:
-                    self.analysis_schema(atoms)
+                    # self.analysis_schema(atoms)
                     self.selection_schema()
                     self.draw_schema()
-                self[idx] = atoms
+                self[idx] = frames
                 # self.step = idx # double the message count ..., replace with part of the setitem message, benchmark
         log.warning(f"{datetime.datetime.now() - start_time} Finished sending data.")
 
-    def read_data(self) -> t.Generator[ase.Atoms, None, None]:
-        if self.file_io is None or self.file_io.name is None:
+    def read_data(self):
+        if self.file_io.name is None:
             yield ase.Atoms()
             return
 

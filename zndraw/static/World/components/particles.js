@@ -99,6 +99,7 @@ class ParticlesGroup extends THREE.Group {
     if (particles === undefined) {
       return;
     }
+    
     if (particles.positions.length === 0) {
       this.remove(this.particles_mesh);
       this.particles_mesh = undefined;
@@ -135,6 +136,75 @@ class ParticlesGroup extends THREE.Group {
     }
     this.particles_mesh.instanceMatrix.needsUpdate = true;
     this.particles_mesh.instanceColor.needsUpdate = true;
+  }
+
+  _updateVectorField(particles) {
+    // -------------------
+    // Vector field stuff
+    // -------------------
+    if (this.vector_field) {
+      for (let arrow of this.vector_field) {
+        this.remove(arrow);
+      }
+    }
+    
+    if (particles.vector_field_type === 2) {  
+      let vectors = particles.vector_field.vectors;
+      let v_origin = particles.vector_field.origin;
+      let v_box = particles.vector_field.box;
+      let v_density = particles.vector_field.density;
+      let v_color = particles.vector_field.color;
+
+      let origins = [];
+
+      let stepSize = [
+        Math.abs(v_box[0]) / (v_density[0]+1),
+        Math.abs(v_box[1]) / (v_density[1]+1),
+        Math.abs(v_box[2]) / (v_density[2]+1)
+      ];
+
+      for (let i = 0; i < v_density[0]; i++) {
+          for (let j = 0; j < v_density[1]; j++) {
+              for (let k = 0; k < v_density[2]; k++) {
+                  let point = [
+                      v_origin[0] + (i+1) * stepSize[0],
+                      v_origin[1] + (j+1) * stepSize[1],
+                      v_origin[2] + (k+1) * stepSize[2]
+                  ];
+                  origins.push(point);
+              }
+          }
+      }
+
+      this.vector_field = [];
+      for (let i = 0; i < vectors.length; i++) {
+        
+        let vector = new THREE.Vector3(...vectors[i]);
+        let origin = new THREE.Vector3(...origins[i]);
+        let length = vector.length();
+        let arrow = new THREE.ArrowHelper(vector.normalize(), origin, length, v_color);
+    
+        this.vector_field.push(arrow);
+        this.add(arrow);
+      }
+    } else if (particles.vector_field_type === 1) {
+        this.vector_field = [];
+
+        let vectors = particles.vector_field.vectors;
+        let origins = particles.vector_field.origins;
+        let v_color = particles.vector_field.color;
+
+        for (let i = 0; i < vectors.length; i++) {
+          
+          let vector = new THREE.Vector3(...vectors[i]);
+          let origin = new THREE.Vector3(...origins[i]);
+          let length = vector.length();
+          let arrow = new THREE.ArrowHelper(vector.normalize(), origin, length, v_color);
+      
+          this.vector_field.push(arrow);
+          this.add(arrow);
+        }
+    }
   }
 
   _get_bonds_mesh(bonds) {
@@ -250,6 +320,10 @@ class ParticlesGroup extends THREE.Group {
 
       if (this.show_bonds) {
         this._updateBonds(this.particle_cache.connectivity);
+      }
+
+      if (this.particle_cache.vector_field_type !== 0) {
+        this._updateVectorField(this.particle_cache);
       }
     }
   }

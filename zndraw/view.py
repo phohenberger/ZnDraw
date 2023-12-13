@@ -2,7 +2,7 @@ import logging
 import multiprocessing as mp
 import webbrowser
 
-from zndraw.app import create_app, socketio
+from zndraw.app import app, io
 from zndraw.zndraw import FileIO, ZnDrawDefault
 
 try:
@@ -52,13 +52,11 @@ def view(
     remote: str = None,
     rev: str = None,
 ):
+    if not use_token:
+        app.config["token"] = "notoken"
+    app.config["upgrade_insecure_requests"] = upgrade_insecure_requests
+    app.config["compute_bonds"] = compute_bonds
     url = f"http://127.0.0.1:{port}"
-
-    app = create_app(
-        use_token=use_token,
-        upgrade_insecure_requests=upgrade_insecure_requests,
-        compute_bonds=compute_bonds,
-    )
 
     file_io = FileIO(filename, start, stop, step, remote, rev)
 
@@ -78,7 +76,7 @@ def view(
     elif open_browser:
         webbrowser.open(url)
 
-    socketio.run(app, port=port, host="0.0.0.0")
+    io.run(app, port=port, host="0.0.0.0")
 
     proc.terminate()
     proc.join()

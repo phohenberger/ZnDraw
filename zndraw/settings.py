@@ -82,12 +82,9 @@ class GlobalConfig(pydantic.BaseModel):
         classes = []
         for method in self.analysis_functions:
             module_name, cls_name = method.rsplit(".", 1)
-            try:
-                module = importlib.import_module(module_name)
-                cls = getattr(module, cls_name)
-                classes.append(cls)
-            except (ModuleNotFoundError, AttributeError):
-                log.critical(f"Module {module_name} not found - skipping")
+            module = importlib.import_module(module_name)
+            cls = getattr(module, cls_name)
+            classes.append(cls)
 
         return t.Union[tuple(classes)]
 

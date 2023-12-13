@@ -20,6 +20,8 @@ class Atoms {
     connectivity,
     calc,
     pbc,
+    vector_field,
+    vector_field_type,
   }) {
     this.positions = positions;
     this.cell = cell;
@@ -29,8 +31,13 @@ class Atoms {
     this.connectivity = connectivity;
     this.calc = calc;
     this.pbc = pbc;
+    this.vector_field = vector_field;
+    this.vector_field_type = vector_field_type;
 
     this.length = this.positions.length;
+
+    // TODO: remove this before release    
+    console.log(this.vector_field);
   }
 
   [Symbol.iterator]() {
@@ -108,6 +115,8 @@ class Cache {
           connectivity: data[key].connectivity,
           calc: data[key].calc,
           pbc: data[key].pbc,
+          vector_field: data[key].vector_field, 
+          vector_field_type: data[key].vector_field_type,
         });
         if (display_new) {
           slider.max = Object.keys(this._cache).length - 1;
@@ -171,6 +180,8 @@ class Cache {
         connectivity: data[id].connectivity,
         calc: data[id].calc,
         pbc: data[id].pbc,
+        vector_field: data[id].vector_field,
+        vector_field_type: data[id].vector_field_type,
       });
       // update slider
       const slider = document.getElementById("frame-slider");
