@@ -1,4 +1,6 @@
+
 import dataclasses
+
 
 import ase
 import networkx as nx
@@ -6,9 +8,10 @@ import numpy as np
 from ase.calculators.singlepoint import SinglePointCalculator
 from ase.data.colors import jmol_colors
 
+
 from zndraw.bonds import ASEComputeBonds
 from zndraw.utils import get_radius, rgb2hex
-
+from zndraw.vec import LatticeVecField, OriginVecField
 
 @dataclasses.dataclass
 class Frame:
@@ -35,9 +38,7 @@ class Frame:
         contains properties of the frame, such as energy,
         that can be viewed using the analyze function.
     vector_field : dict
-        WIP: contains a flowfield that will be displayed in the simulation box.
-        will contain box-length, numbers of vectors per dimension and the directional
-        vectors themself.#
+
     -------------
 
     Secondary Attributes:
@@ -60,20 +61,32 @@ class Frame:
     connectivity: nx.Graph() = nx.empty_graph()
     calc: dict = None
     vector_field: dict = None
+    vector_field_type: int = 0
 
     bonds: bool = True
     auto_bonds: bool = True
 
     def __post_init__(self):
         """
-        Converts all lists to np.ndarray
+        Converts all lists to np.ndarray and checks vector_field entry
         """
+        # Positions, numbers, colors and radii
         for item in ["positions", "numbers", "colors", "radii"]:
             if isinstance(getattr(self, item), list):
                 setattr(self, item, np.array(getattr(self, item)))
 
+        # Cell
         if not isinstance(self.cell, np.ndarray):
             self.cell = np.array(self.cell)
+
+        # Determine which Vector Field
+        if isinstance(self.vector_field, OriginVecField):
+            self.vector_field_type = 1
+        elif isinstance(self.vector_field, LatticeVecField):
+            self.vector_field_type = 2
+        else: # No vector field
+            self.vector_field_type = 0
+        
 
     @classmethod
     def from_atoms(cls, atoms: ase.Atoms):
@@ -212,6 +225,9 @@ class Frame:
                 get_radius(number) for number in frame_dict["numbers"]
             ]
 
+        if self.vector_field_type != 0:
+            frame_dict["vector_field"] = self.vector_field.to_dict()
+
         if self.bonds:
             try:
                 if self.auto_bonds:
@@ -238,12 +254,11 @@ class Frame:
             radii=np.array(data["radii"]),
             pbc=data["pbc"],
             calc=data["calc"],
+            vector_field=data["vector_field"],
+            vector_field_type=data["vector_field_type"],
+            auto_bonds=data["auto_bonds"],
+            bonds=data["bonds"]
         )
-
-        if (
-            "vector_field" in data
-        ):  # currently there is the vector_field part in js missing. So this is useless at the moment
-            frame.vector_field = data["vector_field"]
 
         if "connectivity" in data:
             frame.connectivity = nx.Graph()
@@ -251,3 +266,6 @@ class Frame:
                 frame.connectivity.add_edge(edge[0], edge[1], weight=edge[2])
 
         return frame
+
+
+
