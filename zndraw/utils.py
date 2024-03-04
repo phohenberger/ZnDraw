@@ -111,6 +111,7 @@ class BaseGeometry:
     opacity: float = 0.2
     locked: bool = False
     wireframe: bool = True
+    direction: list = dataclasses.field(default_factory=lambda: [0, 0, 1])
 
     def to_dict(self):
         geometry_dict = dataclasses.asdict(self)
